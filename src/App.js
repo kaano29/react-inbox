@@ -1,17 +1,26 @@
 import './App.css';
 import Toolbar from './components/Toolbar'
 import Message from './components/Message';
-import MessageList from './components/MessageList';
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 function App() {
 
-  const [msgList, setMsgList] = useState(MessageList);
+  const [msgList, setMsgList] = useState([]);
+  const url = 'http://localhost:8082/api/messages'
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await fetch(url)
+      const json = await response.json()
+      setMsgList(...msgList, json.map(msg => ({ ...msg, selected: false })))
+    }
+    fetchData();
+  }, [])
 
   return (
     <div>
-      <Toolbar msgList={msgList} setMsgList={setMsgList}/>
-      <Message msgList={msgList} setMsgList={setMsgList}/>
+      <Toolbar msgList={msgList} setMsgList={setMsgList} url={url}/>
+      <Message msgList={msgList} setMsgList={setMsgList} url={url}/>
     </div>
   );
 }

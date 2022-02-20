@@ -1,7 +1,9 @@
-import { isLabelWithInternallyDisabledControl } from '@testing-library/user-event/dist/utils';
-import React from 'react';
+import React, { useState } from 'react';
+import ComposeForm from './ComposeForm'
 
-const Toolbar = ({ msgList, setMsgList }) => {
+const Toolbar = ({ msgList, setMsgList, url }) => {
+
+    var [showForm, setShowForm] = useState(false)
 
     const checkBoxState = () => {
         if (msgList.length !== 0 && msgList.every(msg => msg.selected === true)) {
@@ -26,80 +28,86 @@ const Toolbar = ({ msgList, setMsgList }) => {
         }
     }
 
-    const handleMarkAsRead = () => {
-        setMsgList(
-            msgList.map(msg => msg.selected === true ? ({ ...msg, read: true }) : msg)
-        )
+    const handleReadAndUnread = async (readStat) => {
+        let id = msgList.filter(msg => msg.selected === true).map(msg => msg.id)
+        let item = {
+            messageIds: id,
+            command: "read",
+            ["read"]: readStat
+        };
+        executePatch(item)
+    };
+
+    const handleDelete = async () => {
+        let id = msgList.filter(msg => msg.selected === true).map(msg => msg.id)
+        let item = {
+            messageIds: id,
+            command: "delete",
+        };
+        executePatch(item)
     }
 
-    const handleMarkAsUnread = () => {
-        setMsgList(
-            msgList.map(msg => msg.selected === true ? ({ ...msg, read: false }) : msg)
-        )
+    const handleLabel = async (labelOption, e) => {
+        e.persist()
+        let id = await msgList.filter(msg => (msg.selected === true && e.target.value !== "Apply label")).map(msg => msg.id)
+        let item = {
+            messageIds: id,
+            command: labelOption,
+            label: e.target.value
+        };
+        executePatch(item)
     }
 
-    const handleDelete = () => {
-        setMsgList(
-            msgList.filter(msg => msg.selected === false && msg)
-        )
+    const executePatch = async (item) => {
+        const response = await fetch(url, {
+            method: "PATCH",
+            body: JSON.stringify(item),
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+        });
+        const json = await response.json();
+        setMsgList(json);
     }
 
     const numberOfUnread = () => {
         return msgList.filter(msg => msg.read === false).length
     }
 
-    const handleAddLabel = (e) => {
-        setMsgList(
-            msgList.map(msg => {
-                if (msg.selected === true && !msg.labels.find(label => label === e.target.value) && e.target.value !== "Apply label") {
-                    msg.labels.push(e.target.value)
-                }
-                return msg
-            }
-            ))
-    }
-
-    const handleRemoveLabel = (e) => {
-        setMsgList(
-            msgList.map(msg => {
-                if (msg.selected === true && msg.labels.find(label => label === e.target.value)) {
-                    const index = msg.labels.indexOf(e.target.value);
-                    if (index > -1) {
-                        msg.labels.splice(index, 1);
-                    }
-                }
-                return msg
-            }
-            ))
+    const toggleForm = () => {
+        setShowForm(showForm = !showForm);
     }
 
     return (<div className="row toolbar">
         <div className="col-md-12">
             <p className="pull-right">
                 <span className="badge badge">{numberOfUnread()}</span>
-                {`unread message${numberOfUnread() !== 1 ? "s" : "" }`}
+                {`unread message${numberOfUnread() !== 1 ? "s" : ""}`}
             </p>
-
+            <a className="btn btn-danger" onClick={toggleForm}>
+                <i className="fa fa-plus"></i>
+            </a>
             <button className="btn btn-default" onClick={handleCheckBox}>
                 <i className={checkBoxState()}></i>
             </button>
 
-            <button className="btn btn-default" onClick={handleMarkAsRead}>
+            <button className="btn btn-default" onClick={() => handleReadAndUnread(true)}>
                 Mark As Read
             </button>
 
-            <button className="btn btn-default" onClick={handleMarkAsUnread}>
+            <button className="btn btn-default" onClick={() => handleReadAndUnread(false)}>
                 Mark As Unread
             </button>
 
-            <select className="form-control label-select" onChange={handleAddLabel}>
+            <select className="form-control label-select" onChange={(e) => handleLabel("addLabel", e)}>
                 <option>Apply label</option>
                 <option value="dev">dev</option>
                 <option value="personal">personal</option>
                 <option value="gschool">gschool</option>
             </select>
 
-            <select className="form-control label-select" onChange={handleRemoveLabel}>
+            <select className="form-control label-select" onChange={(e) => handleLabel("removeLabel", e)}>
                 <option>Remove label</option>
                 <option value="dev">dev</option>
                 <option value="personal">personal</option>
@@ -109,7 +117,9 @@ const Toolbar = ({ msgList, setMsgList }) => {
             <button className="btn btn-default" onClick={handleDelete}>
                 <i className="fa fa-trash-o"></i>
             </button>
+            {showForm && <ComposeForm disabled={true} msgList={msgList} setMsgList={setMsgList} url={url} setShowForm={setShowForm}/>}
         </div>
+
     </div>)
 }
 

@@ -17,6 +17,12 @@ describe('Message', () => {
         ReactDOM.render(<Message />, div)
     })
 
+    it('test star', () => {
+        const mockCallBack = jest.fn();
+        const button = shallow(( <i className={"star fa fa-star"} onClick={mockCallBack}></i>));
+        button.find('i').simulate('click');
+        expect(mockCallBack.mock.calls.length).toBe(1);
+    })
 
 })
 

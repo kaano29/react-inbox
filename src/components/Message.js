@@ -1,15 +1,27 @@
 import React from 'react';
 
-const Message = ({ msgList, setMsgList }) => {
+const Message = ({ msgList, setMsgList, url }) => {
 
     const fillMessages = (msg, index) => {
 
-        const handleStar = () => {
-            setMsgList(
-                msgList.map((m) =>
-                    m.id === msg.id ? { ...m, starred: !m.starred } : m
-                ))
-        }
+        const handleStar = async (e) => {
+            e.preventDefault();
+            let id = [msg.id];
+            let item = {
+                messageIds: id,
+                command: "star",
+            };
+            const response = await fetch(url, {
+                method: "PATCH",
+                body: JSON.stringify(item),
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+            });
+            const json = await response.json();
+            setMsgList(json);
+        };
 
         const handleSelected = () => {
             setMsgList(
@@ -23,7 +35,7 @@ const Message = ({ msgList, setMsgList }) => {
                 <div className="col-xs-1">
                     <div className="row">
                         <div className="col-xs-2">
-                            <input type="checkbox" checked={msg.selected ? "checked" : ""} onChange={handleSelected}/>
+                            <input type="checkbox" checked={msg.selected ? "checked" : ""} onChange={handleSelected} />
                         </div>
                         <div className="col-xs-2" >
                             <i className={msg.starred ? "star fa fa-star" : "star fa fa-star-o"} onClick={handleStar}></i>
@@ -41,7 +53,7 @@ const Message = ({ msgList, setMsgList }) => {
 
 
     return (
-        msgList.map((msg, index) => fillMessages(msg, index))
+        Array.isArray(msgList) && msgList.map((msg, index) => fillMessages(msg, index))
     )
 }
 
